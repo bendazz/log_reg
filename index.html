@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistic Regression with TensorFlow.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            grid-column: span 2;
+        }
+        
+        canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .chart-title {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .control-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .control-section h4 {
+            margin-top: 0;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+        
+        .weight-display {
+            font-family: 'Courier New', monospace;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .weight-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+        }
+        
+        .weight-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .weight-value {
+            color: #007bff;
+            font-weight: bold;
+        }
+        
+        .equation-display {
+            background: #e7f3ff;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #dee2e6;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .slider-value {
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .progress-item {
+            text-align: center;
+        }
+        
+        .progress-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .progress-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                grid-column: span 1;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Logistic Regression Trainer</h1>
+        <p>Interactive binary classification with TensorFlow.js: Each point is a single number x, classified as blue (0) or red (1)</p>
+    </div>
+    
+    <div class="container">
+        <div class="chart-container">
+            <canvas id="plotCanvas" width="500" height="400"></canvas>
+            <div class="chart-title">📈 Data Points & Sigmoid Fit</div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="networkCanvas" width="500" height="400"></canvas>
+            <div class="chart-title">🧠 Neural Network Architecture</div>
+        </div>
+        
+        <div class="controls">
+            <div class="controls-grid">
+                <div class="control-section">
+                    <h4>⚖️ Current Parameters</h4>
+                    <div class="weight-display">
+                        <div class="weight-row">
+                            <span class="weight-label">w₀ (bias):</span>
+                            <span class="weight-value" id="w0">0.000</span>
+                        </div>
+                        <div class="weight-row">
+                            <span class="weight-label">w₁ (weight):</span>
+                            <span class="weight-value" id="w1">0.000</span>
+                        </div>
+                    </div>
+                    <div class="equation-display" id="equation">
+                        σ(z) = 1/(1+e^(-z)), z = 0.000 + 0.000x
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h4>🎯 Training Progress</h4>
+                    <div class="progress-info">
+                        <div class="progress-item">
+                            <div class="progress-label">Epoch</div>
+                            <div class="progress-value" id="current-epoch">0</div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">Loss</div>
+                            <div class="progress-value" id="current-loss">--</div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">Accuracy</div>
+                            <div class="progress-value" id="accuracy">--</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loss Function Display -->
+                    <div style="margin-top: 15px;">
+                        <div style="background: #fff8e1; border: 2px solid #ffa000; border-radius: 8px; padding: 12px;">
+                            <div style="font-weight: bold; color: #e65100; margin-bottom: 8px; text-align: center;">
+                                📊 Loss Function (Binary Cross-Entropy)
+                            </div>
+                            <div style="font-family: 'Courier New', monospace; text-align: center; color: #bf360c; font-size: 0.95em; line-height: 1.4;">
+                                <div style="margin-bottom: 5px;">
+                                    <strong>L = -[y·log(ŷ) + (1-y)·log(1-ŷ)]</strong>
+                                </div>
+                                <div style="font-size: 0.85em; color: #5d4037;">
+                                    y = true class (0 or 1), ŷ = predicted probability
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h4>⚙️ Training Settings</h4>
+                    <div class="slider-container">
+                        <label>Learning Rate:</label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="learning-rate-slider" min="0.01" max="1" step="0.01" value="0.1">
+                            <span class="slider-value" id="learning-rate-value">0.1</span>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <label>Number of Points (per class):</label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="points-slider" min="10" max="50" step="5" value="20">
+                            <span class="slider-value" id="points-value">20</span>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <label>Visualization Spread:</label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="noise-slider" min="0.1" max="3" step="0.1" value="1.0">
+                            <span class="slider-value" id="noise-value">1.0</span>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <label>Class Separation:</label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="separation-slider" min="0" max="3" step="0.1" value="1.0">
+                            <span class="slider-value" id="separation-value">1.0</span>
+                        </div>
+                        <small style="color: #6c757d; margin-top: 5px; display: block;">
+                            Higher values make classes easier to separate
+                        </small>
+                    </div>
+                    <div class="slider-container">
+                        <label>Optimizer:</label>
+                        <select id="optimizer-select" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #dee2e6;">
+                            <option value="adam">Adam (Recommended)</option>
+                            <option value="sgd">SGD</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <button id="start-training">🚀 Start Training</button>
+                <button id="reset">🔄 Generate New Data</button>
+                <button id="add-point">➕ Add Point Mode</button>
+            </div>
+        </div>
+        
+        <!-- Confusion Matrix Section -->
+        <div class="controls" style="margin-top: 20px;">
+            <div class="control-section">
+                <h4>📊 Confusion Matrix</h4>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap;">
+                    <div id="confusion-matrix" style="display: grid; grid-template-columns: 80px 120px 120px; grid-template-rows: 80px 120px 120px; gap: 2px; background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #dee2e6;">
+                        <!-- Headers -->
+                        <div></div>
+                        <div style="background: #e3f2fd; padding: 10px; text-align: center; font-weight: bold; border-radius: 5px; display: flex; align-items: center; justify-content: center; border: 1px solid #1976d2;">
+                            Predicted 0<br><span style="font-size: 0.8em; color: #1976d2;">(Blue)</span>
+                        </div>
+                        <div style="background: #ffebee; padding: 10px; text-align: center; font-weight: bold; border-radius: 5px; display: flex; align-items: center; justify-content: center; border: 1px solid #d32f2f;">
+                            Predicted 1<br><span style="font-size: 0.8em; color: #d32f2f;">(Red)</span>
+                        </div>
+                        
+                        <!-- Row 1 -->
+                        <div style="background: #e3f2fd; padding: 10px; text-align: center; font-weight: bold; border-radius: 5px; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; text-orientation: mixed; border: 1px solid #1976d2;">
+                            Actual 0<br><span style="font-size: 0.8em; color: #1976d2;">(Blue)</span>
+                        </div>
+                        <div id="tn-cell" style="background: #c8e6c9; padding: 15px; text-align: center; border-radius: 5px; border: 2px solid #4caf50; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <div style="font-size: 1.8em; font-weight: bold; color: #2e7d32;" id="tn-value">0</div>
+                            <div style="font-size: 0.8em; color: #388e3c; margin-top: 5px;">True Negative</div>
+                        </div>
+                        <div id="fp-cell" style="background: #ffcdd2; padding: 15px; text-align: center; border-radius: 5px; border: 2px solid #f44336; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <div style="font-size: 1.8em; font-weight: bold; color: #c62828;" id="fp-value">0</div>
+                            <div style="font-size: 0.8em; color: #d32f2f; margin-top: 5px;">False Positive</div>
+                        </div>
+                        
+                        <!-- Row 2 -->
+                        <div style="background: #ffebee; padding: 10px; text-align: center; font-weight: bold; border-radius: 5px; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; text-orientation: mixed; border: 1px solid #d32f2f;">
+                            Actual 1<br><span style="font-size: 0.8em; color: #d32f2f;">(Red)</span>
+                        </div>
+                        <div id="fn-cell" style="background: #ffcdd2; padding: 15px; text-align: center; border-radius: 5px; border: 2px solid #f44336; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <div style="font-size: 1.8em; font-weight: bold; color: #c62828;" id="fn-value">0</div>
+                            <div style="font-size: 0.8em; color: #d32f2f; margin-top: 5px;">False Negative</div>
+                        </div>
+                        <div id="tp-cell" style="background: #c8e6c9; padding: 15px; text-align: center; border-radius: 5px; border: 2px solid #4caf50; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <div style="font-size: 1.8em; font-weight: bold; color: #2e7d32;" id="tp-value">0</div>
+                            <div style="font-size: 0.8em; color: #388e3c; margin-top: 5px;">True Positive</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Metrics Summary -->
+                    <div style="background: #ffffff; border: 2px solid #dee2e6; border-radius: 10px; padding: 20px; min-width: 250px;">
+                        <h5 style="margin-top: 0; margin-bottom: 15px; color: #495057; text-align: center;">📈 Classification Metrics</h5>
+                        <div style="display: grid; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <span style="font-weight: bold; color: #495057;">Accuracy:</span>
+                                <span style="color: #007bff; font-weight: bold;" id="matrix-accuracy">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <span style="font-weight: bold; color: #495057;">Precision:</span>
+                                <span style="color: #28a745; font-weight: bold;" id="matrix-precision">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <span style="font-weight: bold; color: #495057;">Recall:</span>
+                                <span style="color: #17a2b8; font-weight: bold;" id="matrix-recall">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <span style="font-weight: bold; color: #495057;">F1-Score:</span>
+                                <span style="color: #6610f2; font-weight: bold;" id="matrix-f1">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <span style="font-weight: bold; color: #495057;">AUC:</span>
+                                <span style="color: #fd7e14; font-weight: bold;" id="matrix-auc">--</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 0.85em; color: #6c757d; text-align: center;">
+                            <strong>Total Points:</strong> <span id="total-points">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ROC Curve Section -->
+        <div class="controls" style="margin-top: 20px;">
+            <div class="control-section">
+                <h4>📈 ROC Curve (Receiver Operating Characteristic)</h4>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap;">
+                    <div style="background: #ffffff; border: 2px solid #dee2e6; border-radius: 10px; padding: 15px;">
+                        <canvas id="rocCanvas" width="400" height="400"></canvas>
+                        <div style="text-align: center; margin-top: 10px; font-weight: bold; color: #495057;">
+                            ROC Curve Analysis
+                        </div>
+                    </div>
+                    
+                    <!-- ROC Explanation -->
+                    <div style="background: #ffffff; border: 2px solid #dee2e6; border-radius: 10px; padding: 20px; min-width: 300px; max-width: 400px;">
+                        <h5 style="margin-top: 0; margin-bottom: 15px; color: #495057; text-align: center;">🎯 ROC Curve Explained</h5>
+                        <div style="font-size: 0.9em; line-height: 1.5; color: #6c757d;">
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #495057;">What is ROC?</strong><br>
+                                Shows classification performance at all threshold settings by plotting:
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                • <strong>TPR (Sensitivity):</strong> True Positive Rate = TP/(TP+FN)
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                • <strong>FPR:</strong> False Positive Rate = FP/(FP+TN)
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #495057;">Curve Interpretation:</strong>
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                🟩 <strong>Perfect:</strong> AUC = 1.0 (top-left corner)
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                🟨 <strong>Good:</strong> AUC > 0.8 (curves toward top-left)
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                🟧 <strong>Fair:</strong> AUC = 0.7-0.8
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                🟥 <strong>Random:</strong> AUC = 0.5 (diagonal line)
+                            </div>
+                            <div style="background: #e3f2fd; padding: 8px; border-radius: 5px; border: 1px solid #1976d2;">
+                                <strong style="color: #1976d2;">Current Threshold:</strong> <span id="current-threshold">0.50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let dataPoints = [];
+        let model = null;
+        let canvas, ctx;
+        let networkCanvas, networkCtx;
+        let rocCanvas, rocCtx;
+        let currentWeights = { w0: 0, w1: 0 };
+        let isTraining = false;
+        let addPointMode = false;
+        let currentClass = 0; // For adding points: 0 = blue (y=0), 1 = red (y=1)
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Logistic Regression App loaded, TensorFlow.js version:", tf.version.tfjs);
+            
+            // Get canvas and context
+            canvas = document.getElementById('plotCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Get network canvas and context
+            networkCanvas = document.getElementById('networkCanvas');
+            networkCtx = networkCanvas.getContext('2d');
+            
+            // Get ROC canvas and context
+            rocCanvas = document.getElementById('rocCanvas');
+            rocCtx = rocCanvas.getContext('2d');
+            
+            // Generate initial data points
+            generateDataPoints();
+            
+            // Initialize random weights
+            initializeWeights();
+            
+            // Draw initial visualizations
+            drawPlot();
+            drawNetwork();
+            drawROCCurve();
+            
+            // Initialize confusion matrix
+            updateConfusionMatrix();
+            
+            // Set up event listeners
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Button event listeners
+            document.getElementById('start-training').addEventListener('click', startTraining);
+            document.getElementById('reset').addEventListener('click', reset);
+            document.getElementById('add-point').addEventListener('click', toggleAddPointMode);
+            
+            // Learning rate slider
+            const learningRateSlider = document.getElementById('learning-rate-slider');
+            const learningRateValue = document.getElementById('learning-rate-value');
+            
+            learningRateSlider.addEventListener('input', function() {
+                learningRateValue.textContent = parseFloat(this.value).toFixed(2);
+                if (model) {
+                    model.dispose();
+                    model = null;
+                }
+            });
+            
+            // Points slider
+            const pointsSlider = document.getElementById('points-slider');
+            const pointsValue = document.getElementById('points-value');
+            
+            pointsSlider.addEventListener('input', function() {
+                pointsValue.textContent = this.value;
+            });
+            
+            // Noise slider
+            const noiseSlider = document.getElementById('noise-slider');
+            const noiseValue = document.getElementById('noise-value');
+            
+            noiseSlider.addEventListener('input', function() {
+                noiseValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+            
+            // Separation slider
+            const separationSlider = document.getElementById('separation-slider');
+            const separationValue = document.getElementById('separation-value');
+            
+            separationSlider.addEventListener('input', function() {
+                separationValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+            
+            // Optimizer selector
+            const optimizerSelect = document.getElementById('optimizer-select');
+            optimizerSelect.addEventListener('change', function() {
+                if (model) {
+                    model.dispose();
+                    model = null;
+                }
+            });
+            
+            // Canvas click for adding points
+            canvas.addEventListener('click', handleCanvasClick);
+        }
+
+        function generateDataPoints() {
+            dataPoints = [];
+            
+            const pointsPerClass = parseInt(document.getElementById('points-slider').value);
+            const noiseLevel = parseFloat(document.getElementById('noise-slider').value);
+            const separationLevel = parseFloat(document.getElementById('separation-slider').value);
+            
+            console.log(`Generating ${pointsPerClass} points per class with noise level ${noiseLevel} and separation ${separationLevel}`);
+            
+            // Generate blue class points (single x values, plotted at y = 0)
+            // Blue points are shifted to the LEFT (smaller x values)
+            for (let i = 0; i < pointsPerClass; i++) {
+                const baseX = Math.random() * 6 + 1; // x between 1 and 7
+                const x = baseX - separationLevel; // shift left
+                // Add small noise to y-position for visualization only
+                const visualY = 0 + (Math.random() - 0.5) * noiseLevel * 0.1; // small visual noise around y=0
+                dataPoints.push({ 
+                    x: Math.max(0.5, x), // ensure x doesn't go below 0.5
+                    y: Math.max(-0.2, Math.min(0.2, visualY)), // visual y-position (clamped)
+                    class: 0, 
+                    color: '#3498db' 
+                });
+            }
+            
+            // Generate red class points (single x values, plotted at y = 1)
+            // Red points are shifted to the RIGHT (larger x values)
+            for (let i = 0; i < pointsPerClass; i++) {
+                const baseX = Math.random() * 6 + 3; // x between 3 and 9
+                const x = baseX + separationLevel; // shift right
+                // Add small noise to y-position for visualization only
+                const visualY = 1 + (Math.random() - 0.5) * noiseLevel * 0.1; // small visual noise around y=1
+                dataPoints.push({ 
+                    x: Math.min(9.5, x), // ensure x doesn't go above 9.5
+                    y: Math.max(0.8, Math.min(1.2, visualY)), // visual y-position (clamped)
+                    class: 1, 
+                    color: '#e74c3c' 
+                });
+            }
+            
+            // Sort by x for better visualization
+            dataPoints.sort((a, b) => a.x - b.x);
+            
+            console.log("Generated data points:", dataPoints);
+        }
+
+        function initializeWeights() {
+            // Random initial weights
+            currentWeights.w0 = (Math.random() - 0.5) * 4; // bias
+            currentWeights.w1 = (Math.random() - 0.5) * 2; // weight
+            updateWeightDisplay();
+        }
+
+        function sigmoid(z) {
+            return 1 / (1 + Math.exp(-z));
+        }
+
+        function updateWeightDisplay() {
+            document.getElementById('w0').textContent = currentWeights.w0.toFixed(3);
+            document.getElementById('w1').textContent = currentWeights.w1.toFixed(3);
+            
+            // Update equation display
+            const w0Sign = currentWeights.w0 >= 0 ? '' : '';
+            const w1Sign = currentWeights.w1 >= 0 ? ' + ' : ' ';
+            
+            const equation = `σ(z) = 1/(1+e^(-z)), z = ${currentWeights.w0.toFixed(3)}${w1Sign}${currentWeights.w1.toFixed(3)}x`;
+            document.getElementById('equation').textContent = equation;
+            
+            // Calculate accuracy
+            calculateAccuracy();
+        }
+
+        function calculateAccuracy() {
+            if (dataPoints.length === 0) return;
+            
+            let correct = 0;
+            
+            dataPoints.forEach(point => {
+                const z = currentWeights.w0 + currentWeights.w1 * point.x;
+                const prediction = sigmoid(z);
+                const predictedClass = prediction >= 0.5 ? 1 : 0;
+                if (predictedClass === point.class) {
+                    correct++;
+                }
+            });
+            
+            const accuracy = (correct / dataPoints.length) * 100;
+            document.getElementById('accuracy').textContent = accuracy.toFixed(1) + '%';
+            
+            // Update confusion matrix
+            updateConfusionMatrix();
+        }
+
+        function updateConfusionMatrix() {
+            if (dataPoints.length === 0) {
+                // Reset all values to 0
+                document.getElementById('tp-value').textContent = '0';
+                document.getElementById('tn-value').textContent = '0';
+                document.getElementById('fp-value').textContent = '0';
+                document.getElementById('fn-value').textContent = '0';
+                document.getElementById('matrix-accuracy').textContent = '--';
+                document.getElementById('matrix-precision').textContent = '--';
+                document.getElementById('matrix-recall').textContent = '--';
+                document.getElementById('matrix-f1').textContent = '--';
+                document.getElementById('matrix-auc').textContent = '--';
+                document.getElementById('total-points').textContent = '0';
+                document.getElementById('current-threshold').textContent = '0.50';
+                return;
+            }
+            
+            let tp = 0, tn = 0, fp = 0, fn = 0;
+            
+            dataPoints.forEach(point => {
+                const z = currentWeights.w0 + currentWeights.w1 * point.x;
+                const prediction = sigmoid(z);
+                const predictedClass = prediction >= 0.5 ? 1 : 0;
+                const actualClass = point.class;
+                
+                if (actualClass === 1 && predictedClass === 1) tp++;
+                else if (actualClass === 0 && predictedClass === 0) tn++;
+                else if (actualClass === 0 && predictedClass === 1) fp++;
+                else if (actualClass === 1 && predictedClass === 0) fn++;
+            });
+            
+            // Update confusion matrix values
+            document.getElementById('tp-value').textContent = tp;
+            document.getElementById('tn-value').textContent = tn;
+            document.getElementById('fp-value').textContent = fp;
+            document.getElementById('fn-value').textContent = fn;
+            document.getElementById('total-points').textContent = dataPoints.length;
+            
+            // Calculate metrics
+            const total = tp + tn + fp + fn;
+            const accuracy = total > 0 ? ((tp + tn) / total * 100) : 0;
+            const precision = (tp + fp) > 0 ? (tp / (tp + fp) * 100) : 0;
+            const recall = (tp + fn) > 0 ? (tp / (tp + fn) * 100) : 0;
+            const f1 = (precision + recall) > 0 ? (2 * precision * recall / (precision + recall)) : 0;
+            
+            // Calculate AUC
+            const auc = calculateAUC();
+            
+            // Update metrics display
+            document.getElementById('matrix-accuracy').textContent = accuracy.toFixed(1) + '%';
+            document.getElementById('matrix-precision').textContent = precision.toFixed(1) + '%';
+            document.getElementById('matrix-recall').textContent = recall.toFixed(1) + '%';
+            document.getElementById('matrix-f1').textContent = f1.toFixed(1) + '%';
+            document.getElementById('matrix-auc').textContent = auc.toFixed(3);
+            document.getElementById('current-threshold').textContent = '0.50';
+            
+            // Update ROC curve
+            drawROCCurve();
+        }
+
+        function calculateAUC() {
+            if (dataPoints.length === 0) return 0;
+            
+            // Get predictions and actual labels
+            const predictions = [];
+            const actuals = [];
+            
+            dataPoints.forEach(point => {
+                const z = currentWeights.w0 + currentWeights.w1 * point.x;
+                const prediction = sigmoid(z);
+                predictions.push(prediction);
+                actuals.push(point.class);
+            });
+            
+            // Create ROC points by varying threshold
+            const rocPoints = [];
+            const thresholds = [];
+            
+            // Generate thresholds from 0 to 1
+            for (let t = 0; t <= 1; t += 0.01) {
+                thresholds.push(t);
+            }
+            
+            // Add extreme points
+            thresholds.push(0, 1);
+            thresholds.sort((a, b) => a - b);
+            
+            for (const threshold of thresholds) {
+                let tp = 0, fp = 0, tn = 0, fn = 0;
+                
+                for (let i = 0; i < predictions.length; i++) {
+                    const predicted = predictions[i] >= threshold ? 1 : 0;
+                    const actual = actuals[i];
+                    
+                    if (actual === 1 && predicted === 1) tp++;
+                    else if (actual === 0 && predicted === 0) tn++;
+                    else if (actual === 0 && predicted === 1) fp++;
+                    else if (actual === 1 && predicted === 0) fn++;
+                }
+                
+                const tpr = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+                const fpr = (fp + tn) > 0 ? fp / (fp + tn) : 0;
+                
+                rocPoints.push({ fpr, tpr, threshold });
+            }
+            
+            // Sort by FPR for AUC calculation
+            rocPoints.sort((a, b) => a.fpr - b.fpr);
+            
+            // Calculate AUC using trapezoidal rule
+            let auc = 0;
+            for (let i = 1; i < rocPoints.length; i++) {
+                const width = rocPoints[i].fpr - rocPoints[i-1].fpr;
+                const height = (rocPoints[i].tpr + rocPoints[i-1].tpr) / 2;
+                auc += width * height;
+            }
+            
+            return Math.max(0, Math.min(1, auc));
+        }
+
+        function drawROCCurve() {
+            // Clear canvas
+            rocCtx.clearRect(0, 0, rocCanvas.width, rocCanvas.height);
+            
+            if (dataPoints.length === 0) {
+                // Draw empty axes
+                drawROCAxes();
+                return;
+            }
+            
+            const padding = 60;
+            const plotWidth = rocCanvas.width - 2 * padding;
+            const plotHeight = rocCanvas.height - 2 * padding;
+            
+            // Get predictions and actual labels
+            const predictions = [];
+            const actuals = [];
+            
+            dataPoints.forEach(point => {
+                const z = currentWeights.w0 + currentWeights.w1 * point.x;
+                const prediction = sigmoid(z);
+                predictions.push(prediction);
+                actuals.push(point.class);
+            });
+            
+            // Generate ROC points
+            const rocPoints = [];
+            const thresholds = [];
+            
+            for (let t = 0; t <= 1; t += 0.02) {
+                thresholds.push(t);
+            }
+            thresholds.push(0, 1);
+            thresholds.sort((a, b) => a - b);
+            
+            for (const threshold of thresholds) {
+                let tp = 0, fp = 0, tn = 0, fn = 0;
+                
+                for (let i = 0; i < predictions.length; i++) {
+                    const predicted = predictions[i] >= threshold ? 1 : 0;
+                    const actual = actuals[i];
+                    
+                    if (actual === 1 && predicted === 1) tp++;
+                    else if (actual === 0 && predicted === 0) tn++;
+                    else if (actual === 0 && predicted === 1) fp++;
+                    else if (actual === 1 && predicted === 0) fn++;
+                }
+                
+                const tpr = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+                const fpr = (fp + tn) > 0 ? fp / (fp + tn) : 0;
+                
+                rocPoints.push({ fpr, tpr, threshold });
+            }
+            
+            // Sort by FPR
+            rocPoints.sort((a, b) => a.fpr - b.fpr);
+            
+            // Draw axes
+            drawROCAxes();
+            
+            // Draw diagonal reference line (random classifier)
+            rocCtx.strokeStyle = '#999';
+            rocCtx.lineWidth = 2;
+            rocCtx.setLineDash([5, 5]);
+            rocCtx.beginPath();
+            rocCtx.moveTo(padding, rocCanvas.height - padding);
+            rocCtx.lineTo(rocCanvas.width - padding, padding);
+            rocCtx.stroke();
+            rocCtx.setLineDash([]);
+            
+            // Draw ROC curve
+            rocCtx.strokeStyle = '#e74c3c';
+            rocCtx.lineWidth = 3;
+            rocCtx.beginPath();
+            
+            let firstPoint = true;
+            rocPoints.forEach(point => {
+                const x = padding + point.fpr * plotWidth;
+                const y = rocCanvas.height - padding - point.tpr * plotHeight;
+                
+                if (firstPoint) {
+                    rocCtx.moveTo(x, y);
+                    firstPoint = false;
+                } else {
+                    rocCtx.lineTo(x, y);
+                }
+            });
+            rocCtx.stroke();
+            
+            // Highlight current operating point (threshold = 0.5)
+            const currentPoint = rocPoints.find(p => Math.abs(p.threshold - 0.5) < 0.02) || rocPoints[Math.floor(rocPoints.length / 2)];
+            if (currentPoint) {
+                const x = padding + currentPoint.fpr * plotWidth;
+                const y = rocCanvas.height - padding - currentPoint.tpr * plotHeight;
+                
+                rocCtx.fillStyle = '#ffc107';
+                rocCtx.strokeStyle = '#fff';
+                rocCtx.lineWidth = 3;
+                rocCtx.beginPath();
+                rocCtx.arc(x, y, 8, 0, 2 * Math.PI);
+                rocCtx.fill();
+                rocCtx.stroke();
+            }
+        }
+
+        function drawROCAxes() {
+            const padding = 60;
+            
+            // Draw background
+            rocCtx.fillStyle = '#f8f9fa';
+            rocCtx.fillRect(0, 0, rocCanvas.width, rocCanvas.height);
+            
+            // Draw grid
+            rocCtx.strokeStyle = '#e0e0e0';
+            rocCtx.lineWidth = 1;
+            rocCtx.beginPath();
+            
+            // Vertical grid lines
+            for (let i = 0; i <= 10; i++) {
+                const x = padding + (i / 10) * (rocCanvas.width - 2 * padding);
+                rocCtx.moveTo(x, padding);
+                rocCtx.lineTo(x, rocCanvas.height - padding);
+            }
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 10; i++) {
+                const y = padding + (i / 10) * (rocCanvas.height - 2 * padding);
+                rocCtx.moveTo(padding, y);
+                rocCtx.lineTo(rocCanvas.width - padding, y);
+            }
+            rocCtx.stroke();
+            
+            // Draw axes
+            rocCtx.strokeStyle = '#333';
+            rocCtx.lineWidth = 2;
+            rocCtx.beginPath();
+            rocCtx.moveTo(padding, padding);
+            rocCtx.lineTo(padding, rocCanvas.height - padding);
+            rocCtx.moveTo(padding, rocCanvas.height - padding);
+            rocCtx.lineTo(rocCanvas.width - padding, rocCanvas.height - padding);
+            rocCtx.stroke();
+            
+            // Add labels
+            rocCtx.fillStyle = '#333';
+            rocCtx.font = '14px Arial';
+            rocCtx.textAlign = 'center';
+            
+            // X-axis label
+            rocCtx.fillText('False Positive Rate (1 - Specificity)', rocCanvas.width / 2, rocCanvas.height - 20);
+            
+            // Y-axis label
+            rocCtx.save();
+            rocCtx.translate(20, rocCanvas.height / 2);
+            rocCtx.rotate(-Math.PI / 2);
+            rocCtx.fillText('True Positive Rate (Sensitivity)', 0, 0);
+            rocCtx.restore();
+            
+            // Add tick labels
+            rocCtx.font = '12px Arial';
+            
+            // X-axis ticks
+            for (let i = 0; i <= 10; i += 2) {
+                const x = padding + (i / 10) * (rocCanvas.width - 2 * padding);
+                const label = (i / 10).toFixed(1);
+                rocCtx.fillText(label, x, rocCanvas.height - padding + 20);
+            }
+            
+            // Y-axis ticks
+            rocCtx.textAlign = 'right';
+            for (let i = 0; i <= 10; i += 2) {
+                const y = rocCanvas.height - padding - (i / 10) * (rocCanvas.height - 2 * padding);
+                const label = (i / 10).toFixed(1);
+                rocCtx.fillText(label, padding - 10, y + 5);
+            }
+            
+            // Add title
+            rocCtx.fillStyle = '#495057';
+            rocCtx.font = 'bold 16px Arial';
+            rocCtx.textAlign = 'center';
+            rocCtx.fillText('ROC Curve', rocCanvas.width / 2, 25);
+        }
+
+        function drawPlot() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Set up coordinate system
+            const padding = 50;
+            const plotWidth = canvas.width - 2 * padding;
+            const plotHeight = canvas.height - 2 * padding;
+            
+            const minX = 0;
+            const maxX = 10;
+            const minY = -0.5;
+            const maxY = 1.5;
+            const yRange = maxY - minY;
+            
+            // Draw grid
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            // Vertical grid lines
+            for (let x = 0; x <= 10; x += 1) {
+                const canvasX = padding + (x / 10) * plotWidth;
+                ctx.moveTo(canvasX, padding);
+                ctx.lineTo(canvasX, canvas.height - padding);
+            }
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 8; i++) {
+                const y = minY + (i / 8) * yRange;
+                const canvasY = canvas.height - padding - ((y - minY) / yRange) * plotHeight;
+                ctx.moveTo(padding, canvasY);
+                ctx.lineTo(canvas.width - padding, canvasY);
+            }
+            ctx.stroke();
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // Y axis
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            
+            // X axis
+            ctx.moveTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            
+            // Class separation lines
+            const y0Line = canvas.height - padding - ((0 - minY) / yRange) * plotHeight;
+            const y1Line = canvas.height - padding - ((1 - minY) / yRange) * plotHeight;
+            
+            ctx.strokeStyle = '#3498db';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(padding, y0Line);
+            ctx.lineTo(canvas.width - padding, y0Line);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.moveTo(padding, y1Line);
+            ctx.lineTo(canvas.width - padding, y1Line);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.stroke();
+            
+            // Draw current sigmoid curve
+            ctx.strokeStyle = '#9b59b6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            let firstPoint = true;
+            for (let x = 0; x <= 10; x += 0.1) {
+                const z = currentWeights.w0 + currentWeights.w1 * x;
+                const y = sigmoid(z);
+                const canvasX = padding + (x / 10) * plotWidth;
+                const canvasY = canvas.height - padding - ((y - minY) / yRange) * plotHeight;
+                
+                if (firstPoint) {
+                    ctx.moveTo(canvasX, canvasY);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+            
+            // Find and draw vertical decision threshold line where sigmoid = 0.5
+            // For sigmoid(z) = 0.5, we need z = 0, so w0 + w1*x = 0, therefore x = -w0/w1
+            if (Math.abs(currentWeights.w1) > 0.001) { // Avoid division by zero
+                const thresholdX = -currentWeights.w0 / currentWeights.w1;
+                if (thresholdX >= 0 && thresholdX <= 10) { // Check if threshold is within plot bounds
+                    const thresholdCanvasX = padding + (thresholdX / 10) * plotWidth;
+                    const thresholdY = canvas.height - padding - ((0.5 - minY) / yRange) * plotHeight;
+                    
+                    // Draw vertical threshold line
+                    ctx.strokeStyle = '#f39c12';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([8, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(thresholdCanvasX, padding);
+                    ctx.lineTo(thresholdCanvasX, canvas.height - padding);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Draw intersection point where line crosses sigmoid at y=0.5
+                    ctx.fillStyle = '#f39c12';
+                    ctx.beginPath();
+                    ctx.arc(thresholdCanvasX, thresholdY, 8, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Add white border to intersection point
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Add label for threshold value at the bottom
+                    ctx.fillStyle = '#f39c12';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Threshold: x = ${thresholdX.toFixed(2)}`, thresholdCanvasX, canvas.height - padding + 35);
+                }
+            }
+            
+            // Draw data points
+            dataPoints.forEach(point => {
+                const x = padding + (point.x / 10) * plotWidth;
+                const y = canvas.height - padding - ((point.y - minY) / yRange) * plotHeight;
+                
+                ctx.fillStyle = point.color;
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Add white border
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+            
+            // Add labels
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('x', canvas.width - 20, canvas.height - padding + 20);
+            
+            ctx.save();
+            ctx.translate(20, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('y', 0, 0);
+            ctx.restore();
+            
+            // Add class labels
+            ctx.fillStyle = '#3498db';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Blue Class (y=0)', padding + 10, y0Line - 10);
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillText('Red Class (y=1)', padding + 10, y1Line - 10);
+        }
+
+        function drawNetwork() {
+            // Clear network canvas
+            networkCtx.clearRect(0, 0, networkCanvas.width, networkCanvas.height);
+            
+            // Network layout
+            const inputX = 100;
+            const outputX = 400;
+            const centerY = networkCanvas.height / 2;
+            const nodeRadius = 30;
+            const spacing = 80; // Increased spacing for better clarity
+            
+            // Input layer
+            const inputNodes = [
+                { x: inputX, y: centerY - spacing/2, label: '1', color: '#f3e5f5', border: '#7b1fa2', desc: 'Bias' },
+                { x: inputX, y: centerY + spacing/2, label: 'x', color: '#e3f2fd', border: '#1976d2', desc: 'Input' }
+            ];
+            
+            // Output node
+            const outputNode = { x: outputX, y: centerY, label: 'σ(z)', color: '#fff3e0', border: '#f57c00' };
+            
+            // Draw connections with weights displayed on edges
+            networkCtx.strokeStyle = '#666';
+            networkCtx.lineWidth = 3;
+            
+            inputNodes.forEach((input, i) => {
+                // Draw connection line
+                networkCtx.beginPath();
+                networkCtx.moveTo(input.x + nodeRadius, input.y);
+                networkCtx.lineTo(outputNode.x - nodeRadius, outputNode.y);
+                networkCtx.stroke();
+                
+                // Calculate midpoint for weight label
+                const midX = (input.x + nodeRadius + outputNode.x - nodeRadius) / 2;
+                const midY = (input.y + outputNode.y) / 2;
+                
+                // Draw weight label background (small rounded rectangle)
+                const weight = i === 0 ? currentWeights.w0 : currentWeights.w1;
+                const weightLabel = i === 0 ? 'w₀' : 'w₁';
+                const weightText = `${weightLabel}: ${weight.toFixed(2)}`;
+                
+                // Measure text to create proper background
+                networkCtx.font = 'bold 12px Arial';
+                const textMetrics = networkCtx.measureText(weightText);
+                const textWidth = textMetrics.width;
+                const textHeight = 12;
+                
+                // Draw background rectangle
+                networkCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                networkCtx.strokeStyle = '#666';
+                networkCtx.lineWidth = 1;
+                const padding = 4;
+                networkCtx.fillRect(midX - textWidth/2 - padding, midY - textHeight/2 - padding, 
+                                  textWidth + 2*padding, textHeight + 2*padding);
+                networkCtx.strokeRect(midX - textWidth/2 - padding, midY - textHeight/2 - padding, 
+                                    textWidth + 2*padding, textHeight + 2*padding);
+                
+                // Draw weight text
+                networkCtx.fillStyle = '#333';
+                networkCtx.textAlign = 'center';
+                networkCtx.textBaseline = 'middle';
+                networkCtx.fillText(weightText, midX, midY);
+            });
+            
+            // Draw input nodes
+            inputNodes.forEach(node => {
+                networkCtx.fillStyle = node.color;
+                networkCtx.strokeStyle = node.border;
+                networkCtx.lineWidth = 3;
+                networkCtx.beginPath();
+                networkCtx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                networkCtx.fill();
+                networkCtx.stroke();
+                
+                // Label
+                networkCtx.fillStyle = 'black';
+                networkCtx.font = 'bold 16px Arial';
+                networkCtx.textAlign = 'center';
+                networkCtx.textBaseline = 'middle';
+                networkCtx.fillText(node.label, node.x, node.y);
+                
+                // Description
+                networkCtx.font = '12px Arial';
+                networkCtx.textBaseline = 'top';
+                networkCtx.fillText(node.desc, node.x, node.y - nodeRadius - 10);
+            });
+            
+            // Draw output node
+            networkCtx.fillStyle = outputNode.color;
+            networkCtx.strokeStyle = outputNode.border;
+            networkCtx.lineWidth = 3;
+            networkCtx.beginPath();
+            networkCtx.arc(outputNode.x, outputNode.y, nodeRadius, 0, 2 * Math.PI);
+            networkCtx.fill();
+            networkCtx.stroke();
+            
+            // Output label
+            networkCtx.fillStyle = 'black';
+            networkCtx.font = 'bold 16px Arial';
+            networkCtx.textAlign = 'center';
+            networkCtx.textBaseline = 'middle';
+            networkCtx.fillText(outputNode.label, outputNode.x, outputNode.y);
+            networkCtx.font = '12px Arial';
+            networkCtx.textBaseline = 'top';
+            networkCtx.fillText('Sigmoid', outputNode.x, outputNode.y - nodeRadius - 10);
+            
+            // Draw equation at bottom
+            networkCtx.fillStyle = '#333';
+            networkCtx.font = 'bold 16px Arial';
+            networkCtx.textAlign = 'center';
+            networkCtx.textBaseline = 'alphabetic';
+            networkCtx.fillText('z = w₀ + w₁x', networkCanvas.width / 2, networkCanvas.height - 40);
+            networkCtx.fillText('σ(z) = 1/(1+e^(-z))', networkCanvas.width / 2, networkCanvas.height - 20);
+        }
+
+        function createModel() {
+            const learningRate = parseFloat(document.getElementById('learning-rate-slider').value);
+            const optimizerType = document.getElementById('optimizer-select').value;
+            
+            // Create model for logistic regression
+            model = tf.sequential({
+                layers: [
+                    tf.layers.dense({
+                        inputShape: [1], // single input x
+                        units: 1,
+                        activation: 'sigmoid',
+                        useBias: true
+                    })
+                ]
+            });
+
+            // Choose optimizer based on selection
+            let optimizer;
+            if (optimizerType === 'adam') {
+                optimizer = tf.train.adam(learningRate);
+            } else {
+                optimizer = tf.train.sgd(learningRate);
+            }
+
+            model.compile({
+                optimizer: optimizer,
+                loss: 'binaryCrossentropy',
+                metrics: ['accuracy']
+            });
+
+            console.log(`Logistic regression model created with ${optimizerType} optimizer and learning rate: ${learningRate}`);
+            return model;
+        }
+
+        async function startTraining() {
+            if (isTraining) return;
+            
+            console.log("Starting logistic regression training...");
+            isTraining = true;
+            document.getElementById('start-training').textContent = '🔄 Training...';
+            
+            if (!model) {
+                createModel();
+            }
+
+            // Prepare training data
+            const xs = tf.tensor2d(dataPoints.map(p => [p.x]));
+            const ys = tf.tensor2d(dataPoints.map(p => [p.class]));
+
+            const epochs = 200;
+            let currentEpoch = 0;
+
+            await model.fit(xs, ys, {
+                epochs: epochs,
+                callbacks: {
+                    onEpochEnd: async (epoch, logs) => {
+                        currentEpoch = epoch + 1;
+                        
+                        if (currentEpoch % 10 === 0 || currentEpoch === 1) {
+                            const weights = model.getWeights();
+                            const weightData = await weights[0].data();
+                            const biasData = await weights[1].data();
+                            
+                            currentWeights.w0 = biasData[0];   // bias term
+                            currentWeights.w1 = weightData[0]; // weight for x
+                            
+                            updateWeightDisplay();
+                            document.getElementById('current-epoch').textContent = currentEpoch;
+                            document.getElementById('current-loss').textContent = logs.loss.toFixed(6);
+                            
+                            drawPlot();
+                            drawNetwork();
+                            
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                        }
+                    }
+                }
+            });
+
+            xs.dispose();
+            ys.dispose();
+
+            isTraining = false;
+            document.getElementById('start-training').textContent = '🚀 Start Training';
+            console.log("Logistic regression training completed!");
+        }
+
+        function reset() {
+            if (model) {
+                model.dispose();
+                model = null;
+            }
+            generateDataPoints();
+            initializeWeights();
+            drawPlot();
+            drawNetwork();
+            document.getElementById('current-epoch').textContent = '0';
+            document.getElementById('current-loss').textContent = '--';
+            document.getElementById('accuracy').textContent = '--';
+            updateConfusionMatrix();
+        }
+
+        function toggleAddPointMode() {
+            addPointMode = !addPointMode;
+            const button = document.getElementById('add-point');
+            if (addPointMode) {
+                button.textContent = '❌ Exit Add Mode';
+                button.style.background = '#e74c3c';
+                canvas.style.cursor = 'crosshair';
+            } else {
+                button.textContent = '➕ Add Point Mode';
+                button.style.background = '';
+                canvas.style.cursor = 'default';
+            }
+        }
+
+        function handleCanvasClick(event) {
+            if (!addPointMode) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+            
+            // Convert canvas coordinates to data coordinates
+            const padding = 50;
+            const plotWidth = canvas.width - 2 * padding;
+            const plotHeight = canvas.height - 2 * padding;
+            
+            if (clickX < padding || clickX > canvas.width - padding || 
+                clickY < padding || clickY > canvas.height - padding) {
+                return;
+            }
+            
+            const dataX = ((clickX - padding) / plotWidth) * 10;
+            
+            const minY = -0.5;
+            const maxY = 1.5;
+            const yRange = maxY - minY;
+            
+            const dataY = minY + ((canvas.height - padding - clickY) / plotHeight) * yRange;
+            
+            // Determine class based on y position
+            const pointClass = dataY < 0.5 ? 0 : 1;
+            const color = pointClass === 0 ? '#3498db' : '#e74c3c';
+            
+            dataPoints.push({ x: dataX, y: dataY, class: pointClass, color: color });
+            dataPoints.sort((a, b) => a.x - b.x);
+            
+            drawPlot();
+            updateWeightDisplay();
+        }
+    </script>
+</body>
+</html>
